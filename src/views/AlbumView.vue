@@ -7,6 +7,7 @@ import { goBack } from '../router'
 import { fmtLength, plural } from '../format'
 import Cover from '../components/Cover.vue'
 import Icon from '../components/Icon.vue'
+import PlayButtons from '../components/PlayButtons.vue'
 import SongRow from '../components/SongRow.vue'
 
 const props = defineProps<{ id: string }>()
@@ -14,7 +15,7 @@ const album = computed(() => albumsByKey.value.get(props.id))
 const multiDisc = computed(() => new Set(album.value?.songs.map((s) => s.disc)).size > 1)
 const play = (start: number, shuffle?: boolean) => {
   const a = album.value
-  if (a) playList(a.songs.map((s) => s.id), start, { kind: 'album', label: a.name }, { shuffle })
+  if (a) playList(a.songs.map((s) => s.id), start, { kind: 'album', label: a.name, id: a.key }, { shuffle })
 }
 </script>
 
@@ -35,8 +36,7 @@ const play = (start: number, shuffle?: boolean) => {
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn primary" @click="play(0, false)"><Icon name="play" :size="18" />Play</button>
-        <button class="btn" @click="play(0, true)"><Icon name="shuffle" :size="18" />Shuffle</button>
+        <PlayButtons :ids="album.songs.map((s) => s.id)" :context="{ kind: 'album', label: album.name, id: album.key }" />
       </div>
       <div class="songs">
         <template v-for="(s, i) in album.songs" :key="s.id">

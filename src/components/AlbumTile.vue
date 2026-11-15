@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import type { Album } from '../library'
-import { playList } from '../player'
+import { computed } from 'vue'
+import { isActive, player, playOrToggle } from '../player'
 import Cover from './Cover.vue'
 import Icon from './Icon.vue'
 
 const props = defineProps<{ album: Album; sub?: string }>()
 const to = () => ({ name: 'album', params: { id: props.album.key } })
-const play = () => playList(props.album.songs.map((s) => s.id), 0, { kind: 'album', label: props.album.name }, { shuffle: false })
+const ctx = () => ({ kind: 'album', label: props.album.name, id: props.album.key })
+const playing = computed(() => isActive(ctx()) && player.playing)
+const play = () => playOrToggle(props.album.songs.map((s) => s.id), ctx())
 </script>
 
 <template>
   <div class="tile">
     <div class="art">
       <RouterLink :to="to()" tabindex="-1" aria-hidden="true"><Cover :cover-id="album.coverId" :icon="28" /></RouterLink>
-      <button class="tile-play" :aria-label="`Play ${album.name}`" @click="play"><Icon name="play" :size="18" /></button>
+      <button class="tile-play" :class="{ on: playing }" :aria-label="`${playing ? 'Pause' : 'Play'} ${album.name}`" @click="play"><Icon :name="playing ? 'pause' : 'play'" :size="18" /></button>
     </div>
     <RouterLink :to="to()">
       <div class="t ellipsis">{{ album.name }}</div>

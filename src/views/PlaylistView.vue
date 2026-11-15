@@ -11,6 +11,7 @@ import { fmtLength, plural } from '../format'
 import Cover from '../components/Cover.vue'
 import Icon from '../components/Icon.vue'
 import PlaylistCover from '../components/PlaylistCover.vue'
+import PlayButtons from '../components/PlayButtons.vue'
 import SongRow from '../components/SongRow.vue'
 
 const props = defineProps<{ id: string }>()
@@ -20,7 +21,7 @@ const duration = computed(() => list.value.reduce((n, s) => n + s.duration, 0))
 const editing = ref(false)
 
 const play = (start: number, shuffle?: boolean) =>
-  playList(list.value.map((s) => s.id), start, { kind: 'playlist', label: playlist.value!.name }, { shuffle })
+  playList(list.value.map((s) => s.id), start, { kind: 'playlist', label: playlist.value!.name, id: playlist.value!.id }, { shuffle })
 
 async function remove(song: Song) {
   await removeFromPlaylist(props.id, song.id)
@@ -87,8 +88,7 @@ async function nudge(i: number, by: number) {
 
       <template v-if="list.length">
         <div v-if="!editing" class="btn-row">
-          <button class="btn primary" @click="play(0, false)"><Icon name="play" :size="18" />Play</button>
-          <button class="btn" @click="play(0, true)"><Icon name="shuffle" :size="18" />Shuffle</button>
+          <PlayButtons :ids="list.map((s) => s.id)" :context="{ kind: 'playlist', label: playlist.name, id: playlist.id }" />
           <button v-if="list.length > 1" class="btn" style="flex: 0 0 48px; padding: 0" aria-label="Reorder or remove songs" @click="editing = true"><Icon name="grip" /></button>
         </div>
         <p v-else class="small muted">Drag the handle to change the order. Tap × to take a song out of the playlist.</p>

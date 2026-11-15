@@ -46,7 +46,8 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { background: var(--bg); }
+/* Always keep room for the scrollbar, so pages and opening a drawer never shift the layout sideways. */
+html { background: var(--bg); scrollbar-gutter: stable; }
 body {
   margin: 0;
   background: var(--bg);
@@ -102,6 +103,7 @@ input { font: inherit; color: inherit; }
   display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 .btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.lit { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .btn.outline { background: transparent; border: 1.5px solid var(--outline); height: 44px; border-radius: 10px; font-size: 14px; }
 .btn-row { display: flex; gap: 10px; }
 .btn-row .btn { flex: 1; padding: 0 12px; }

@@ -14,6 +14,8 @@ export interface QueueItem {
 export interface PlayContext {
   kind: string
   label: string
+  /** Which album, playlist or artist, so its buttons can show that it is the one playing. */
+  id?: string
 }
 
 interface Saved {
@@ -202,6 +204,24 @@ export function playList(ids: string[], start: number, context: PlayContext, opt
     player.queue = ids.map((id) => item(id))
     load(start, true)
   }
+}
+
+/** True while the queue came from this album / playlist / artist / list. */
+export function isActive(ctx: { kind: string; id?: string }) {
+  return !!current.value && player.context?.kind === ctx.kind && (player.context?.id ?? '') === (ctx.id ?? '')
+}
+
+/** The play button of an album, playlist or list: starts it, or pauses / resumes it if it is already on. */
+export function playOrToggle(ids: string[], ctx: PlayContext) {
+  if (isActive(ctx)) toggle()
+  else playList(ids, 0, ctx, { shuffle: false })
+}
+
+/** The shuffle button of an album, playlist or list: starts it shuffled, or, if it is already on,
+ *  switches shuffle for what comes next without touching the song that is playing. */
+export function shuffleOrToggle(ids: string[], ctx: PlayContext) {
+  if (isActive(ctx)) toggleShuffle()
+  else playList(ids, 0, ctx, { shuffle: true })
 }
 
 export function toggle() {

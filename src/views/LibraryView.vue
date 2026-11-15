@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { albums, artists, cmp, songs, type Album } from '../library'
 import type { Song } from '../db'
-import { playList } from '../player'
+import { isActive, player, playList, playOrToggle } from '../player'
 import { openSheet } from '../ui'
 import { plural } from '../format'
 import { playlists } from '../playlists'
@@ -12,6 +12,7 @@ import type { Playlist } from '../db'
 import AlbumTile from '../components/AlbumTile.vue'
 import PlaylistCover from '../components/PlaylistCover.vue'
 import Icon from '../components/Icon.vue'
+import PlayButtons from '../components/PlayButtons.vue'
 import SongRow from '../components/SongRow.vue'
 
 type Tab = 'albums' | 'playlists' | 'artists' | 'songs'
@@ -75,12 +76,13 @@ function chooseSort() {
 }
 
 const playAll = (start: number, shuffle?: boolean) =>
-  playList(sortedSongs.value.map((s) => s.id), start, { kind: 'library', label: 'All songs' }, { shuffle })
+  playList(sortedSongs.value.map((s) => s.id), start, { kind: 'library', label: 'All songs', id: 'all' }, { shuffle })
 
 function playPlaylist(p: Playlist) {
   const have = new Set(songs.value.map((s) => s.id))
-  playList(p.songIds.filter((id) => have.has(id)), 0, { kind: 'playlist', label: p.name }, { shuffle: false })
+  playOrToggle(p.songIds.filter((id) => have.has(id)), { kind: 'playlist', label: p.name, id: p.id })
 }
+const playlistPlaying = (p: Playlist) => isActive({ kind: 'playlist', id: p.id }) && player.playing
 async function addPlaylist() {
   const p = await newPlaylist()
   if (p) router.push({ name: 'playlist', params: { id: p.id } })
@@ -138,7 +140,7 @@ async function addPlaylist() {
                 <span class="s">{{ plural(p.songIds.length, 'song') }}</span>
               </span>
             </RouterLink>
-            <button class="act" :disabled="!p.songIds.length" :aria-label="`Play ${p.name}`" @click="playPlaylist(p)"><Icon name="play" :size="20" /></button>
+            <button class="act" :class="{ on: playlistPlaying(p) }" :disabled="!p.songIds.length" :aria-label="`${playlistPlaying(p) ? 'Pause' : 'Play'} ${p.name}`" @click="playPlaylist(p)"><Icon :name="playlistPlaying(p) ? 'pause' : 'play'" :size="20" /></button>
             <button class="act" :aria-label="`Options for ${p.name}`" @click="playlistMenu(p)"><Icon name="more" :size="20" /></button>
           </div>
         </div>
@@ -162,8 +164,7 @@ async function addPlaylist() {
 
       <template v-else>
         <div class="btn-row">
-          <button class="btn primary" @click="playAll(0, false)"><Icon name="play" :size="18" />Play</button>
-          <button class="btn" @click="playAll(0, true)"><Icon name="shuffle" :size="18" />Shuffle</button>
+          <PlayButtons :ids="sortedSongs.map((s) => s.id)" :context="{ kind: 'library', label: 'All songs', id: 'all' }" />
         </div>
         <div class="songs">
           <SongRow v-for="(s, i) in sortedSongs" :key="s.id" :song="s" :sub="s.album ? `${s.artist} · ${s.album}` : s.artist" @play="playAll(i)" />

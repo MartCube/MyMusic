@@ -6,6 +6,7 @@ import { goBack } from '../router'
 import { plural } from '../format'
 import AlbumTile from '../components/AlbumTile.vue'
 import Icon from '../components/Icon.vue'
+import PlayButtons from '../components/PlayButtons.vue'
 import SongRow from '../components/SongRow.vue'
 
 const props = defineProps<{ name: string }>()
@@ -19,7 +20,7 @@ const playOrder = computed(() => {
   return [...ids, ...a.songs.filter((s) => !seen.has(s.id)).map((s) => s.id)]
 })
 const play = (id?: string, shuffle?: boolean) =>
-  playList(playOrder.value, id ? Math.max(playOrder.value.indexOf(id), 0) : 0, { kind: 'artist', label: artist.value!.name }, { shuffle })
+  playList(playOrder.value, id ? Math.max(playOrder.value.indexOf(id), 0) : 0, { kind: 'artist', label: artist.value!.name, id: artist.value!.name.toLowerCase() }, { shuffle })
 </script>
 
 <template>
@@ -32,8 +33,7 @@ const play = (id?: string, shuffle?: boolean) =>
         <div class="small muted" style="margin-top: 4px">{{ artist.albums.length ? plural(artist.albums.length, 'album') + ' · ' : '' }}{{ plural(artist.songs.length, 'song') }}</div>
       </div>
       <div class="btn-row">
-        <button class="btn primary" @click="play(undefined, false)"><Icon name="play" :size="18" />Play</button>
-        <button class="btn" @click="play(undefined, true)"><Icon name="shuffle" :size="18" />Shuffle</button>
+        <PlayButtons :ids="playOrder" :context="{ kind: 'artist', label: artist.name, id: artist.name.toLowerCase() }" />
       </div>
       <section v-if="artist.albums.length" class="section">
         <h2 class="label">Albums</h2>
