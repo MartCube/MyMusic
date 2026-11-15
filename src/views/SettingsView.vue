@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { albums, coverUrls, musicBytes, removeEverything, songs } from '../library'
 import { stop } from '../player'
 import { nearlyFull, refreshStorage, requestProtection, storage } from '../storage'
-import { confirmSheet, toast } from '../ui'
+import { confirmSheet, openSheet, toast } from '../ui'
 import { fmtBytes, plural } from '../format'
 import Icon from '../components/Icon.vue'
 
@@ -11,10 +11,43 @@ const total = computed(() => storage.used + storage.free)
 const musicPct = computed(() => (total.value ? (musicBytes.value / total.value) * 100 : 0))
 const otherPct = computed(() => (total.value ? (Math.max(storage.used - musicBytes.value, 0) / total.value) * 100 : 0))
 
+// The browser decides this on its own and gives no reason when it says no. Chromium browsers
+// (Chrome, Brave, Edge) usually only agree once the app is installed or the site is bookmarked.
+const protectDenied = ref(false)
 async function protect() {
-  if (storage.protected) return toast('Already protected')
-  if (await requestProtection()) toast('Your music is protected')
-  else toast('The browser said no. Install the app to the home screen, then try again.')
+  if (storage.protected) {
+    openSheet({
+      title: 'Your music is protected',
+      text: 'The browser has agreed not to clear the library on its own. This cannot be switched off from here; it ends only if you clear this site\'s data in the browser.',
+      actions: [],
+    })
+    return
+  }
+  if (!navigator.storage?.persist) {
+    protectDenied.value = true
+    openSheet({
+      title: 'Not supported in this browser',
+      text: 'This browser has no way to protect stored data. Your music is still saved and plays offline. The browser would only remove it if the device runs very low on space.',
+      actions: [],
+    })
+    return
+  }
+  if (await requestProtection()) {
+    protectDenied.value = false
+    toast('Your music is protected')
+    return
+  }
+  protectDenied.value = true
+  const steps = standalone
+    ? 'Open MyMusic a few more times and try again; browsers allow this for apps you use regularly.'
+    : isIos
+      ? 'In Safari, tap Share, then "Add to Home Screen", open MyMusic from the home screen, and try again.'
+      : 'Install MyMusic as an app (the install icon in the address bar, or the browser menu) or bookmark this page, then try again.'
+  openSheet({
+    title: 'The browser did not allow this yet',
+    text: `Your music is still saved and plays offline. Without protection, the browser may remove it only if the device runs very low on space. ${steps}`,
+    actions: installEvent.value ? [{ label: 'Install MyMusic now', run: install }] : [],
+  })
 }
 
 async function deleteAll() {
@@ -68,7 +101,7 @@ onMounted(refreshStorage)
         <div class="grow">
           <div style="font-weight: 500">Protect my music</div>
           <div class="muted" style="font-size: 12px; margin-top: 2px">
-            {{ storage.protected ? 'The browser will not clear the library on its own' : 'Ask the browser not to clear the library' }}
+            {{ storage.protected ? 'The browser will not clear the library on its own' : protectDenied ? 'Not allowed by the browser yet. Tap to see what to do.' : 'Ask the browser not to clear the library' }}
           </div>
         </div>
         <button class="toggle" aria-label="Protect my music" :aria-pressed="storage.protected" @click="protect"><span /></button>
