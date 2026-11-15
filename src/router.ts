@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import LibraryView from './views/LibraryView.vue'
 import AlbumView from './views/AlbumView.vue'
 import ArtistView from './views/ArtistView.vue'
+import PlaylistView from './views/PlaylistView.vue'
 import SearchView from './views/SearchView.vue'
 import ImportView from './views/ImportView.vue'
 import SettingsView from './views/SettingsView.vue'
@@ -12,6 +13,7 @@ export const router = createRouter({
     { path: '/', name: 'library', component: LibraryView },
     { path: '/album/:id', name: 'album', component: AlbumView, props: true },
     { path: '/artist/:name', name: 'artist', component: ArtistView, props: true },
+    { path: '/playlist/:id', name: 'playlist', component: PlaylistView, props: true },
     { path: '/search', name: 'search', component: SearchView },
     { path: '/import', name: 'import', component: ImportView },
     { path: '/settings', name: 'settings', component: SettingsView },

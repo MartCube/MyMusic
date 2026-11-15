@@ -19,7 +19,16 @@ export interface Song {
   mime: string
 }
 
+export interface Playlist {
+  id: string
+  name: string
+  /** In playing order. A song appears at most once. */
+  songIds: string[]
+  createdAt: number
+}
+
 interface Schema extends DBSchema {
+  playlists: { key: string; value: Playlist }
   songs: { key: string; value: Song }
   audio: { key: string; value: Blob }
   covers: { key: string; value: Blob }
@@ -30,12 +39,15 @@ let dbp: Promise<IDBPDatabase<Schema>> | undefined
 
 /** Song info, audio files and covers live in separate stores so listing the library never touches the audio. */
 export function db() {
-  dbp ??= openDB<Schema>('mymusic', 1, {
-    upgrade(d) {
-      d.createObjectStore('songs', { keyPath: 'id' })
-      d.createObjectStore('audio')
-      d.createObjectStore('covers')
-      d.createObjectStore('kv')
+  dbp ??= openDB<Schema>('mymusic', 2, {
+    upgrade(d, oldVersion) {
+      if (oldVersion < 1) {
+        d.createObjectStore('songs', { keyPath: 'id' })
+        d.createObjectStore('audio')
+        d.createObjectStore('covers')
+        d.createObjectStore('kv')
+      }
+      if (oldVersion < 2) d.createObjectStore('playlists', { keyPath: 'id' })
     },
   })
   return dbp
@@ -99,4 +111,16 @@ export async function kvGet<T>(key: string): Promise<T | undefined> {
 
 export async function kvSet(key: string, value: unknown) {
   await (await db()).put('kv', value, key)
+}
+
+export async function allPlaylists() {
+  return (await db()).getAll('playlists')
+}
+
+export async function putPlaylist(p: Playlist) {
+  await (await db()).put('playlists', p)
+}
+
+export async function deletePlaylist(id: string) {
+  await (await db()).delete('playlists', id)
 }

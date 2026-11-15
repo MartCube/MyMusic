@@ -1,6 +1,7 @@
 import { computed, reactive, shallowRef } from 'vue'
 import * as store from './db'
 import type { Song } from './db'
+import { loadPlaylists, pruneFromPlaylists } from './playlists'
 
 export interface Album {
   key: string
@@ -84,7 +85,7 @@ export function findArtist(name: string) {
 export const musicBytes = computed(() => songs.value.reduce((n, s) => n + s.size, 0))
 
 export async function loadLibrary() {
-  const [list, covers] = await Promise.all([store.allSongs(), store.allCovers()])
+  const [list, covers] = await Promise.all([store.allSongs(), store.allCovers(), loadPlaylists()])
   for (const [id, blob] of covers) coverUrls.set(id, URL.createObjectURL(blob))
   songs.value = list
   ready.value = true
@@ -105,6 +106,7 @@ export async function removeSongs(ids: string[]) {
   const used = new Set(kept.map((s) => s.coverId))
   const orphans = [...coverUrls.keys()].filter((c) => !used.has(c))
   await store.deleteSongs(ids)
+  await pruneFromPlaylists(gone)
   await store.deleteCovers(orphans)
   for (const c of orphans) {
     URL.revokeObjectURL(coverUrls.get(c)!)
@@ -115,6 +117,7 @@ export async function removeSongs(ids: string[]) {
 
 export async function removeEverything() {
   await store.clearLibrary()
+  await pruneFromPlaylists(new Set(songs.value.map((s) => s.id)))
   for (const url of coverUrls.values()) URL.revokeObjectURL(url)
   coverUrls.clear()
   songs.value = []

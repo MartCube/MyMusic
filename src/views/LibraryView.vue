@@ -6,20 +6,34 @@ import type { Song } from '../db'
 import { playList } from '../player'
 import { openSheet } from '../ui'
 import { plural } from '../format'
-import Cover from '../components/Cover.vue'
+import { playlists } from '../playlists'
+import { newPlaylist, playlistMenu } from '../menus'
+import type { Playlist } from '../db'
+import AlbumTile from '../components/AlbumTile.vue'
+import PlaylistCover from '../components/PlaylistCover.vue'
 import Icon from '../components/Icon.vue'
 import SongRow from '../components/SongRow.vue'
 
-type Tab = 'albums' | 'artists' | 'songs'
+type Tab = 'albums' | 'playlists' | 'artists' | 'songs'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'albums', label: 'Albums' },
+  { id: 'playlists', label: 'Playlists' },
   { id: 'artists', label: 'Artists' },
   { id: 'songs', label: 'Songs' },
 ]
 const route = useRoute()
 const router = useRouter()
-const tab = computed<Tab>(() => (TABS.some((t) => t.id === route.query.tab) ? (route.query.tab as Tab) : 'albums'))
-const setTab = (id: Tab) => router.replace({ query: { ...route.query, tab: id === 'albums' ? undefined : id } })
+// The tab is in the URL (so Back returns to it) and remembered, so the app reopens where you left it.
+const isTab = (v: unknown): v is Tab => TABS.some((t) => t.id === v)
+const tab = computed<Tab>(() => {
+  if (isTab(route.query.tab)) return route.query.tab
+  const last = localStorage.getItem('library.tab')
+  return isTab(last) ? last : 'albums'
+})
+function setTab(id: Tab) {
+  localStorage.setItem('library.tab', id)
+  router.replace({ query: { ...route.query, tab: id } })
+}
 
 const ALBUM_SORTS: Record<string, { label: string; fn: (a: Album, b: Album) => number }> = {
   artist: { label: 'Artist A–Z', fn: (a, b) => cmp(a.artist, b.artist) || a.year - b.year || cmp(a.name, b.name) },
@@ -62,6 +76,15 @@ function chooseSort() {
 
 const playAll = (start: number, shuffle?: boolean) =>
   playList(sortedSongs.value.map((s) => s.id), start, { kind: 'library', label: 'All songs' }, { shuffle })
+
+function playPlaylist(p: Playlist) {
+  const have = new Set(songs.value.map((s) => s.id))
+  playList(p.songIds.filter((id) => have.has(id)), 0, { kind: 'playlist', label: p.name }, { shuffle: false })
+}
+async function addPlaylist() {
+  const p = await newPlaylist()
+  if (p) router.push({ name: 'playlist', params: { id: p.id } })
+}
 </script>
 
 <template>
@@ -89,24 +112,42 @@ const playAll = (start: number, shuffle?: boolean) =>
       <div class="between">
         <div class="small muted">
           <template v-if="tab === 'artists'">{{ plural(artists.length, 'artist') }}</template>
+          <template v-else-if="tab === 'playlists'">{{ plural(playlists.length, 'playlist') }}</template>
           <template v-else>{{ plural(albums.length, 'album') }} · {{ plural(songs.length, 'song') }}</template>
         </div>
-        <button v-if="tab !== 'artists'" class="text-btn" @click="chooseSort">
+        <button v-if="tab === 'playlists'" class="text-btn" style="color: var(--accent); font-weight: 700" @click="addPlaylist"><Icon name="plus" :size="16" />New playlist</button>
+        <button v-else-if="tab !== 'artists'" class="text-btn" @click="chooseSort">
           <Icon name="sort" :size="16" />{{ (tab === 'albums' ? ALBUM_SORTS[albumSort] : SONG_SORTS[songSort]).label }}
         </button>
       </div>
 
       <template v-if="tab === 'albums'">
         <div v-if="sortedAlbums.length" class="grid">
-          <RouterLink v-for="al in sortedAlbums" :key="al.key" :to="{ name: 'album', params: { id: al.key } }" class="tile">
-            <Cover :cover-id="al.coverId" :icon="28" />
-            <div>
-              <div class="t ellipsis">{{ al.name }}</div>
-              <div class="a ellipsis">{{ al.artist }}</div>
-            </div>
-          </RouterLink>
+          <AlbumTile v-for="al in sortedAlbums" :key="al.key" :album="al" />
         </div>
         <p v-else class="muted" style="font-size: 14px; line-height: 1.5">None of your songs has an album name in its tags. You'll find them all under Songs.</p>
+      </template>
+
+      <template v-else-if="tab === 'playlists'">
+        <div v-if="playlists.length" class="stack">
+          <div v-for="p in playlists" :key="p.id" class="song tall">
+            <RouterLink :to="{ name: 'playlist', params: { id: p.id } }" class="main">
+              <PlaylistCover class="s56" :playlist="p" />
+              <span class="grow">
+                <span class="t ellipsis" style="display: block; font-weight: 700">{{ p.name }}</span>
+                <span class="s">{{ plural(p.songIds.length, 'song') }}</span>
+              </span>
+            </RouterLink>
+            <button class="act" :disabled="!p.songIds.length" :aria-label="`Play ${p.name}`" @click="playPlaylist(p)"><Icon name="play" :size="20" /></button>
+            <button class="act" :aria-label="`Options for ${p.name}`" @click="playlistMenu(p)"><Icon name="more" :size="20" /></button>
+          </div>
+        </div>
+        <div v-else class="empty" style="margin: 0">
+          <div class="mark"><Icon name="playlist" :size="34" /></div>
+          <h2>No playlists yet</h2>
+          <p>Group songs you like to hear together. You can also start one from any song's ⋮ menu.</p>
+          <button class="btn primary" @click="addPlaylist"><Icon name="plus" :size="18" />New playlist</button>
+        </div>
       </template>
 
       <div v-else-if="tab === 'artists'" class="stack">

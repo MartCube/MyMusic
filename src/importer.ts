@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { parseBlob, selectCover } from 'music-metadata'
+import type { ICommonTagsResult } from 'music-metadata'
 import * as store from './db'
 import type { Song } from './db'
 import { addSongToLibrary, registerCover, songsById, UNKNOWN_ARTIST } from './library'
@@ -191,7 +191,9 @@ async function importOne(file: File, item: ImportItem, folderCovers: Map<string,
   }
 
   const audio = file.slice(0, file.size, mime)
-  let common: Awaited<ReturnType<typeof parseBlob>>['common'] | undefined
+  // Loaded on first use so the tag reader does not slow down opening the app.
+  const { parseBlob, selectCover } = await import('music-metadata')
+  let common: ICommonTagsResult | undefined
   let duration = 0
   try {
     const meta = await parseBlob(audio)

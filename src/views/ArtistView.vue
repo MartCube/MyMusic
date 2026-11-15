@@ -4,7 +4,7 @@ import { findArtist } from '../library'
 import { playList } from '../player'
 import { goBack } from '../router'
 import { plural } from '../format'
-import Cover from '../components/Cover.vue'
+import AlbumTile from '../components/AlbumTile.vue'
 import Icon from '../components/Icon.vue'
 import SongRow from '../components/SongRow.vue'
 
@@ -38,13 +38,7 @@ const play = (id?: string, shuffle?: boolean) =>
       <section v-if="artist.albums.length" class="section">
         <h2 class="label">Albums</h2>
         <div class="grid">
-          <RouterLink v-for="al in artist.albums" :key="al.key" :to="{ name: 'album', params: { id: al.key } }" class="tile">
-            <Cover :cover-id="al.coverId" :icon="28" />
-            <div>
-              <div class="t ellipsis">{{ al.name }}</div>
-              <div class="a ellipsis">{{ al.year || plural(al.songs.length, 'song') }}</div>
-            </div>
-          </RouterLink>
+          <AlbumTile v-for="al in artist.albums" :key="al.key" :album="al" :sub="String(al.year || plural(al.songs.length, 'song'))" />
         </div>
       </section>
       <section v-if="artist.songs.length" class="section">

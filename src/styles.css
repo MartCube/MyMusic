@@ -99,27 +99,40 @@ input { font: inherit; color: inherit; }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cover.s40 { width: 40px; }
 .cover.s48 { width: 48px; }
+.cover.s56 { width: 56px; }
+.cover.quad { display: grid; grid-template-columns: 1fr 1fr; }
+.cover.quad img { aspect-ratio: 1; }
 .cover.s44 { width: 44px; }
 .cover.round { border-radius: 50%; background: var(--pill); color: var(--text); font-weight: 700; font-size: 20px; width: 56px; }
 
 /* ---- album grid ---- */
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 10px; }
 .grid .tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; text-align: left; }
+.grid .tile .art { position: relative; }
+.grid .tile .art .cover { width: 100%; }
+.tile-play { position: absolute; right: 6px; bottom: 6px; width: 40px; height: 40px; border-radius: 12px; background: var(--accent); color: var(--on-accent); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45); }
+/* Extends the tap area past the visible button without changing how it looks. */
+.tile-play::after, .song .act::after { content: ''; position: absolute; inset: -6px -3px; }
 .grid .tile .t { font-weight: 500; font-size: 13px; }
 .grid .tile .a { font-size: 12px; color: var(--muted); }
 
 /* ---- song rows ---- */
 .songs { display: flex; flex-direction: column; }
-.song { display: flex; align-items: center; gap: 12px; min-height: 56px; content-visibility: auto; contain-intrinsic-size: auto 56px; }
-.song.lined { min-height: 50px; gap: 14px; border-bottom: 1px solid var(--surface); contain-intrinsic-size: auto 50px; }
-.song .main { flex: 1 1 0; min-width: 0; text-align: left; display: flex; align-items: center; gap: 12px; align-self: stretch; }
+.song { display: flex; align-items: center; gap: 6px; min-height: 60px; content-visibility: auto; contain-intrinsic-size: auto 60px; }
+.song.lined { border-bottom: 1px solid var(--surface); }
+.song.tall { min-height: 72px; }
+.song.edit { height: 60px; gap: 8px; position: relative; content-visibility: visible; border-radius: 10px; transition: transform 0.15s; }
+.song .main { flex: 1 1 0; min-width: 0; text-align: left; display: flex; align-items: center; gap: 12px; align-self: stretch; padding-right: 6px; }
 .song.lined .main { gap: 14px; }
 .song .t { font-size: 15px; font-weight: 500; }
 .song .s { font-size: 13px; color: var(--muted); }
 .song .n { width: 20px; text-align: right; font-size: 13px; color: var(--muted); flex-shrink: 0; }
 .song.active .t, .song.active .n { color: var(--accent); }
-.song .more { width: 36px; height: 44px; color: var(--muted); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.song .dur { font-size: 13px; color: var(--muted); }
+.song .act { position: relative; width: 44px; height: 44px; border-radius: 12px; background: var(--surface); color: var(--text); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.song .act.on { background: var(--accent); color: var(--on-accent); }
+.song .act.plain { background: transparent; color: var(--muted); }
+.song .act:active, .tile-play:active, .btn:active, .icon-btn:active { transform: scale(0.94); }
+.song .handle { touch-action: none; cursor: grab; }
 
 .artist-row { display: flex; align-items: center; gap: 14px; min-height: 68px; text-align: left; width: 100%; }
 .artist-row .t { font-size: 16px; font-weight: 700; }
@@ -168,6 +181,9 @@ input { font: inherit; color: inherit; }
 .mini .s { font-size: 12px; color: var(--muted); }
 .mini .ctl { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .mini .wide { display: none; }
+.mini .ctl { position: relative; }
+.mini .ctl.lit { color: var(--accent); }
+.mini .ctl .one { position: absolute; top: 6px; right: 4px; font-size: 10px; font-weight: 700; color: var(--accent); }
 .mini .prog { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--accent); }
 
 /* ---- now playing ---- */
@@ -212,6 +228,10 @@ input { font: inherit; color: inherit; }
 .sheet .head { display: flex; align-items: center; gap: 12px; padding: 0 4px 4px; }
 .sheet .head .t { font-size: 16px; font-weight: 700; }
 .sheet .text { color: var(--muted); font-size: 14px; line-height: 1.5; padding: 0 4px; }
+.field { height: 52px; border-radius: 12px; border: 1.5px solid var(--outline); background: var(--surface); padding: 0 14px; font-size: 16px; outline: none; width: 100%; }
+.field:focus { border-color: var(--accent); }
+.update { position: fixed; left: 10px; right: 10px; top: calc(env(safe-area-inset-top) + 10px); z-index: 70; max-width: 520px; margin: 0 auto; background: var(--raised); border: 1.5px solid var(--accent); border-radius: 14px; padding: 8px 6px 8px 14px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+.update .btn { height: 40px; padding: 0 14px; font-size: 14px; }
 .sheet .act { min-height: 52px; padding: 0 14px; border-radius: 12px; background: var(--pill); display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 500; text-align: left; }
 .sheet .act.danger { color: var(--accent); }
 .sheet .act.cancel { background: transparent; justify-content: center; color: var(--muted); }
@@ -266,6 +286,10 @@ input { font: inherit; color: inherit; }
   .mini { left: 0; right: 0; bottom: 0; border-radius: 0; border-top: 1px solid var(--line); background: var(--surface); padding: 0 24px; gap: 8px; }
   .mini .cover { width: 48px; }
   .mini .wide { display: flex; }
+  .mini .open { flex: 0 1 280px; }
+  .mini .seek { flex: 1 1 0; flex-direction: row; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); margin: 0 12px; order: 9; }
+  .mini .seek input { margin: 0; }
+  .mini .prog { display: none; }
   .mini .prog { top: 0; bottom: auto; }
   .toast { bottom: calc(var(--mini-h) + 24px); }
   .scrim { align-items: center; }

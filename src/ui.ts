@@ -16,6 +16,8 @@ export interface Sheet {
   text?: string
   actions: SheetAction[]
   cancel?: string
+  /** Shows a text field; the value is handed to `onSubmit`. */
+  input?: { value: string; placeholder: string; submit: string; onSubmit: (text: string) => void }
   /** Called when the sheet is closed without choosing an action. */
   onDismiss?: () => void
 }
@@ -23,6 +25,8 @@ export interface Sheet {
 export const ui = reactive({
   sheet: null as Sheet | null,
   toast: '',
+  /** Set when a new version of the app has been downloaded; calling it reloads into that version. */
+  update: null as (() => void) | null,
 })
 
 export function openSheet(sheet: Sheet) {
@@ -41,6 +45,19 @@ export function confirmSheet(title: string, text: string, confirmLabel: string) 
       cancel: 'Cancel',
       onDismiss: () => resolve(false),
       actions: [{ label: confirmLabel, danger: true, run: () => resolve(true) }],
+    }
+  })
+}
+
+/** Asks for a short piece of text, e.g. a playlist name. Resolves to null if closed. */
+export function promptSheet(title: string, placeholder: string, submit: string, value = '') {
+  return new Promise<string | null>((resolve) => {
+    ui.sheet = {
+      title,
+      actions: [],
+      cancel: 'Cancel',
+      input: { value, placeholder, submit, onSubmit: (text) => resolve(text) },
+      onDismiss: () => resolve(null),
     }
   })
 }

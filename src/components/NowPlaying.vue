@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { songsById, albumKeyOf } from '../library'
 import { clearUpNext, current, cycleRepeat, jumpTo, next, player, previous, removeAt, seek, toggle, toggleShuffle } from '../player'
 import { fmtTime } from '../format'
+import { choosePlaylist } from '../menus'
 import Cover from './Cover.vue'
 import Icon from './Icon.vue'
 
@@ -40,6 +41,11 @@ const contextLine = computed(() => {
   return c ? { top: c.kind === 'queue' ? 'Playing' : `Playing from ${c.kind}`, name: c.label } : null
 })
 
+// Swipe down on the cover to close, like putting the player away.
+let touchY = 0
+const swipeStart = (e: TouchEvent) => (touchY = e.touches[0].clientY)
+const swipeEnd = (e: TouchEvent) => e.changedTouches[0].clientY - touchY > 80 && close()
+
 function goAlbum() {
   const s = current.value
   if (!s?.album) return
@@ -73,7 +79,7 @@ function goAlbum() {
             <Cover class="s40" :cover-id="x.song!.coverId" />
             <span class="grow"><span class="t ellipsis" style="display: block">{{ x.song!.title }}</span><span class="s ellipsis" style="display: block">{{ x.song!.artist }}</span></span>
           </button>
-          <button class="more" :aria-label="`Remove ${x.song!.title} from queue`" @click="removeAt(x.index)"><Icon name="close" :size="18" /></button>
+          <button class="act plain" :aria-label="`Remove ${x.song!.title} from queue`" @click="removeAt(x.index)"><Icon name="close" :size="18" /></button>
         </div>
       </div>
       <div v-if="rest.length" class="stack" style="gap: 4px">
@@ -86,7 +92,7 @@ function goAlbum() {
             <Cover class="s40" :cover-id="x.song!.coverId" />
             <span class="grow"><span class="t ellipsis" style="display: block">{{ x.song!.title }}</span><span class="s ellipsis" style="display: block">{{ x.song!.artist }}</span></span>
           </button>
-          <button class="more" :aria-label="`Remove ${x.song!.title} from queue`" @click="removeAt(x.index)"><Icon name="close" :size="18" /></button>
+          <button class="act plain" :aria-label="`Remove ${x.song!.title} from queue`" @click="removeAt(x.index)"><Icon name="close" :size="18" /></button>
         </div>
       </div>
       <p v-if="!upcoming.length" class="muted" style="text-align: center; padding: 32px 0; font-size: 14px">Nothing else is queued. This is the last song.</p>
@@ -102,12 +108,15 @@ function goAlbum() {
         </div>
         <button class="icon-btn" aria-label="Up next" @click="openQueue"><Icon name="queue" /></button>
       </div>
-      <Cover class="art" :cover-id="current.coverId" :icon="72" />
-      <div>
+      <Cover class="art" :cover-id="current.coverId" :icon="72" @touchstart.passive="swipeStart" @touchend.passive="swipeEnd" />
+      <div class="between" style="align-items: flex-end">
+       <div class="grow">
         <div class="song-title">{{ current.title }}</div>
         <div class="muted ellipsis" style="margin-top: 4px">
           {{ current.artist }}<template v-if="current.album"> · <button style="text-decoration: underline" @click="goAlbum">{{ current.album }}</button></template>
         </div>
+       </div>
+       <button class="ring" aria-label="Add to playlist" @click="choosePlaylist([current.id], current.title)"><Icon name="plus" /></button>
       </div>
       <div class="seek">
         <input

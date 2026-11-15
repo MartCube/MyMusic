@@ -2,7 +2,7 @@
 import { useRoute } from 'vue-router'
 import Icon from './Icon.vue'
 const route = useRoute()
-const inLibrary = () => ['library', 'album', 'artist'].includes(String(route.name))
+const inLibrary = () => ['library', 'album', 'artist', 'playlist'].includes(String(route.name))
 </script>
 
 <template>

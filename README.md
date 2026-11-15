@@ -8,13 +8,16 @@ The product spec lives in the project's `spec/feature-list.md`; the look is the 
 
 - **Import** single files, many files or a whole folder (folder picking on desktop and Android). Tags and embedded covers are read, `cover.jpg` / `folder.jpg` next to the songs is used as a fallback, duplicates are skipped, and unplayable files are listed with the reason.
 - **Library**: Albums, Artists and Songs, with sorting and search (case and accent insensitive).
+- **Playlists**: create, rename and delete; add songs or whole albums from the ⋮ menu or the player; drag to reorder; remove songs.
 - **Playback**: play / pause / next / previous / seek, shuffle, repeat off / all / one, an Up next queue with "Play next" and "Add to queue", a mini player and a full Now playing screen.
 - **Background and lock screen**: Media Session controls with cover, title and artist; headphone and Bluetooth buttons.
 - **Remembers** the last song, position and queue.
 - **Offline**: the app shell is cached by a service worker; music lives in IndexedDB. Storage use, a "nearly full" warning and a "Protect my music" (persistent storage) switch are in Settings.
+- **Updates**: an installed app checks for a new version when opened, hourly, and from Settings; it asks before reloading so a song is never cut off.
+- **Keyboard** (desktop): Space play/pause, ←/→ seek 5 s, Shift+←/→ previous/next, `/` search. Files can be dropped on the window to import.
 - **Delete** a song, an album or the whole library.
 
-Not built yet (from the v1 spec): playlists, album groups, editing song info and covers, backup export / import, drag-to-reorder in the queue.
+Not built yet (from the v1 spec): album groups, editing song info and covers, backup export / import, drag-to-reorder in the queue.
 
 ## Develop
 
@@ -34,6 +37,7 @@ npm run preview    # serve the production build (service worker included)
 | `src/db.ts` | IndexedDB: `songs` (info), `audio` (the files), `covers`, `kv` (player state) |
 | `src/importer.ts` | Reads tags with `music-metadata`, fingerprints files to skip duplicates, shrinks covers |
 | `src/library.ts` | In-memory library; albums and artists are derived from the songs |
+| `src/playlists.ts` | Playlists store (IndexedDB `playlists`) |
 | `src/player.ts` | One `<audio>` element, the queue, shuffle / repeat, Media Session, saved state |
 | `src/views/`, `src/components/` | Screens and shared pieces (Vue 3) |
 | `src/styles.css` | Ember design tokens and all styling |

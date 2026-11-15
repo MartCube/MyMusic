@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { albums, coverUrls, musicBytes, removeEverything, songs } from '../library'
 import { stop } from '../player'
 import { nearlyFull, refreshStorage, requestProtection, storage } from '../storage'
-import { confirmSheet, openSheet, toast } from '../ui'
+import { confirmSheet, openSheet, toast, ui } from '../ui'
 import { fmtBytes, plural } from '../format'
 import Icon from '../components/Icon.vue'
 
@@ -76,6 +76,23 @@ async function install() {
   installEvent.value = null
 }
 
+const build = __BUILD__
+const checking = ref(false)
+async function checkForUpdate() {
+  if (!navigator.onLine) return toast('You are offline. Updates need internet.')
+  checking.value = true
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration()
+    await reg?.update()
+    // A found update shows the "new version is ready" bar once it has finished downloading.
+    if (!reg?.installing && !reg?.waiting && !ui.update) toast('You have the latest version')
+    else if (!ui.update) toast('Downloading the new version…')
+  } catch {
+    toast('Could not check for updates')
+  }
+  checking.value = false
+}
+
 onMounted(refreshStorage)
 </script>
 
@@ -122,6 +139,15 @@ onMounted(refreshStorage)
         <RouterLink :to="{ name: 'import' }"><span class="grow">Import music</span><Icon name="right" :size="18" /></RouterLink>
         <button class="danger" :disabled="!songs.length" @click="deleteAll">Delete all music from this device</button>
       </div>
+    </section>
+
+    <section class="section" style="gap: 8px">
+      <h2 class="label">App</h2>
+      <div class="list-card">
+        <button v-if="ui.update" style="color: var(--accent); font-weight: 700" @click="ui.update()"><span class="grow">Update is ready. Reload now</span><Icon name="refresh" :size="18" /></button>
+        <button v-else :disabled="checking" @click="checkForUpdate"><span class="grow">Check for updates</span><span class="small muted">{{ checking ? 'Checking…' : 'Version ' + build }}</span></button>
+      </div>
+      <div class="muted" style="font-size: 12px; line-height: 1.45">The app updates itself when you open it with internet. Updating never touches your music or playlists.</div>
     </section>
 
     <p class="muted" style="font-size: 12px; line-height: 1.45">MyMusic keeps everything on this device. Nothing is uploaded or shared.</p>
