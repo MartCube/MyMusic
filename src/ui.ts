@@ -37,6 +37,13 @@ export function closeSheet() {
   ui.sheet = null
 }
 
+/** Closes the sheet as "cancelled": confirm and prompt sheets resolve as no answer. */
+export function dismissSheet() {
+  const s = ui.sheet
+  ui.sheet = null
+  s?.onDismiss?.()
+}
+
 export function confirmSheet(title: string, text: string, confirmLabel: string) {
   return new Promise<boolean>((resolve) => {
     ui.sheet = {

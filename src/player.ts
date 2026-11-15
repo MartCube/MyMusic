@@ -24,6 +24,8 @@ interface Saved {
   repeat: Repeat
   context: PlayContext | null
   order: string[]
+  volume?: number
+  muted?: boolean
 }
 
 export const player = reactive({
@@ -38,6 +40,8 @@ export const player = reactive({
   /** The list being played in its original order, so shuffle can be switched off again. */
   order: [] as string[],
   error: '',
+  volume: 1,
+  muted: false,
 })
 
 export const current = computed(() => {
@@ -338,6 +342,21 @@ export function stop() {
   save()
 }
 
+/** 0 to 1. Phones usually ignore this and use their own volume buttons. */
+export function setVolume(v: number) {
+  player.volume = Math.round(Math.min(1, Math.max(0, v)) * 100) / 100
+  player.muted = false
+  audio.volume = player.volume
+  audio.muted = false
+  save()
+}
+
+export function toggleMute() {
+  player.muted = !player.muted
+  audio.muted = player.muted
+  save()
+}
+
 // ---- lock screen / headphone buttons -----------------------------------
 
 function updateMetadata() {
@@ -399,6 +418,8 @@ function save() {
     repeat: player.repeat,
     context: player.context && { ...player.context },
     order: [...player.order],
+    volume: player.volume,
+    muted: player.muted,
   }
   store.kvSet('player', data).catch(() => {})
 }
@@ -407,6 +428,10 @@ function save() {
 export async function restorePlayer() {
   const saved = await store.kvGet<Saved>('player').catch(() => undefined)
   restored = true
+  if (saved && typeof saved.volume === 'number') {
+    player.volume = audio.volume = saved.volume
+    player.muted = audio.muted = !!saved.muted
+  }
   if (!saved?.queue?.length) {
     if (saved) Object.assign(player, { shuffle: !!saved.shuffle, repeat: saved.repeat ?? 'off' })
     return

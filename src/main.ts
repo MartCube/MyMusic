@@ -9,6 +9,9 @@ import { router } from './router'
 import { loadLibrary } from './library'
 import { restorePlayer } from './player'
 import { ui } from './ui'
+import { initTheme } from './theme'
+
+initTheme()
 
 // The service worker caches the app so it opens with no internet. When a newer version has been
 // downloaded we ask before switching to it, because reloading would cut off the song that is playing.

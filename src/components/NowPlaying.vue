@@ -5,6 +5,7 @@ import { songsById, albumKeyOf } from '../library'
 import { clearUpNext, current, cycleRepeat, jumpTo, next, player, previous, removeAt, seek, toggle, toggleShuffle } from '../player'
 import { fmtTime } from '../format'
 import { choosePlaylist } from '../menus'
+import { useSwipeDown } from '../useSwipeDown'
 import Cover from './Cover.vue'
 import Icon from './Icon.vue'
 
@@ -41,10 +42,9 @@ const contextLine = computed(() => {
   return c ? { top: c.kind === 'queue' ? 'Playing' : `Playing from ${c.kind}`, name: c.label } : null
 })
 
-// Swipe down on the cover to close, like putting the player away.
-let touchY = 0
-const swipeStart = (e: TouchEvent) => (touchY = e.touches[0].clientY)
-const swipeEnd = (e: TouchEvent) => e.changedTouches[0].clientY - touchY > 80 && close()
+// Swipe the whole screen down to put the player (or Up next) away.
+const panel = ref<HTMLElement>()
+const swipe = useSwipeDown(panel, close)
 
 function goAlbum() {
   const s = current.value
@@ -55,7 +55,8 @@ function goAlbum() {
 </script>
 
 <template>
-  <section v-if="current" class="np" aria-label="Now playing">
+  <section v-if="current" ref="panel" class="np" aria-label="Now playing" :style="swipe.style()">
+    <div class="grabber" aria-hidden="true" />
     <!-- Up next -->
     <div v-if="showQueue" class="np-inner" style="gap: 20px">
       <div class="between">
@@ -108,7 +109,7 @@ function goAlbum() {
         </div>
         <button class="icon-btn" aria-label="Up next" @click="openQueue"><Icon name="queue" /></button>
       </div>
-      <Cover class="art" :cover-id="current.coverId" :icon="72" @touchstart.passive="swipeStart" @touchend.passive="swipeEnd" />
+      <Cover class="art" :cover-id="current.coverId" :icon="72" />
       <div class="between" style="align-items: flex-end">
        <div class="grow">
         <div class="song-title">{{ current.title }}</div>

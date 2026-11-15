@@ -5,6 +5,7 @@ import ArtistView from './views/ArtistView.vue'
 import PlaylistView from './views/PlaylistView.vue'
 import SearchView from './views/SearchView.vue'
 import ImportView from './views/ImportView.vue'
+import ShortcutsView from './views/ShortcutsView.vue'
 import SettingsView from './views/SettingsView.vue'
 
 export const router = createRouter({
@@ -17,6 +18,7 @@ export const router = createRouter({
     { path: '/search', name: 'search', component: SearchView },
     { path: '/import', name: 'import', component: ImportView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    { path: '/settings/shortcuts', name: 'shortcuts', component: ShortcutsView },
     { path: '/:rest(.*)*', redirect: '/' },
   ],
   scrollBehavior(to, from, saved) {

@@ -5,6 +5,7 @@ import { stop } from '../player'
 import { nearlyFull, refreshStorage, requestProtection, storage } from '../storage'
 import { confirmSheet, openSheet, toast, ui } from '../ui'
 import { fmtBytes, plural } from '../format'
+import { ACCENTS, theme, type Mode } from '../theme'
 import Icon from '../components/Icon.vue'
 
 const total = computed(() => storage.used + storage.free)
@@ -93,6 +94,14 @@ async function checkForUpdate() {
   checking.value = false
 }
 
+const MODES: { id: Mode; label: string }[] = [
+  { id: 'dark', label: 'Dark' },
+  { id: 'light', label: 'Light' },
+  { id: 'system', label: 'System' },
+]
+const swatch = (a: (typeof ACCENTS)[number]) => (theme.effective === 'light' ? a.light : a.dark)
+const hasKeyboard = matchMedia('(pointer: fine)').matches
+
 onMounted(refreshStorage)
 </script>
 
@@ -142,8 +151,35 @@ onMounted(refreshStorage)
     </section>
 
     <section class="section" style="gap: 8px">
+      <h2 class="label">Appearance</h2>
+      <div class="card">
+        <div class="segmented" role="radiogroup" aria-label="Theme">
+          <button v-for="m in MODES" :key="m.id" role="radio" :aria-checked="theme.mode === m.id" :aria-selected="theme.mode === m.id" @click="theme.mode = m.id">{{ m.label }}</button>
+        </div>
+        <div class="small muted">{{ theme.mode === 'system' ? `Follows your device, now ${theme.effective}.` : 'Accent colour' }}</div>
+        <div class="swatches" role="radiogroup" aria-label="Accent colour">
+          <button
+            v-for="a in ACCENTS"
+            :key="a.id"
+            class="swatch"
+            role="radio"
+            :aria-checked="theme.accent === a.id"
+            :aria-pressed="theme.accent === a.id"
+            :aria-label="a.name"
+            :title="a.name"
+            :style="{ background: swatch(a) }"
+            @click="theme.accent = a.id"
+          >
+            <Icon v-if="theme.accent === a.id" name="check" :size="18" />
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" style="gap: 8px">
       <h2 class="label">App</h2>
       <div class="list-card">
+        <RouterLink :to="{ name: 'shortcuts' }"><span class="grow">Keyboard shortcuts</span><span v-if="hasKeyboard" class="small muted">Press ?</span><Icon name="right" :size="18" /></RouterLink>
         <button v-if="ui.update" style="color: var(--accent); font-weight: 700" @click="ui.update()"><span class="grow">Update is ready. Reload now</span><Icon name="refresh" :size="18" /></button>
         <button v-else :disabled="checking" @click="checkForUpdate"><span class="grow">Check for updates</span><span class="small muted">{{ checking ? 'Checking…' : 'Version ' + build }}</span></button>
       </div>

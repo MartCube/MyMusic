@@ -14,7 +14,9 @@ The product spec lives in the project's `spec/feature-list.md`; the look is the 
 - **Remembers** the last song, position and queue.
 - **Offline**: the app shell is cached by a service worker; music lives in IndexedDB. Storage use, a "nearly full" warning and a "Protect my music" (persistent storage) switch are in Settings.
 - **Updates**: an installed app checks for a new version when opened, hourly, and from Settings; it asks before reloading so a song is never cut off.
-- **Keyboard** (desktop): Space play/pause, ←/→ seek 5 s, Shift+←/→ previous/next, `/` search. Files can be dropped on the window to import.
+- **Drawers**: every menu opens as a bottom drawer on phones (swipe down to close) and a dialog on desktop. Now playing and Up next also close with a swipe down.
+- **Keyboard shortcuts** (full list in Settings › Keyboard shortcuts, or press `?`): Esc closes or goes back, Space/Enter play or pause, arrows seek and change volume, N/B next/previous, S shuffle, R repeat, P player, Q queue, `/` search. Files can be dropped on the window to import.
+- **Themes**: dark (Ember), light or follow the system, with six accent colours.
 - **Delete** a song, an album or the whole library.
 
 Not built yet (from the v1 spec): album groups, editing song info and covers, backup export / import, drag-to-reorder in the queue.
@@ -38,6 +40,9 @@ npm run preview    # serve the production build (service worker included)
 | `src/importer.ts` | Reads tags with `music-metadata`, fingerprints files to skip duplicates, shrinks covers |
 | `src/library.ts` | In-memory library; albums and artists are derived from the songs |
 | `src/playlists.ts` | Playlists store (IndexedDB `playlists`) |
+| `src/shortcuts.ts` | Keyboard shortcuts and the list shown in Settings |
+| `src/theme.ts` | Dark/light/system theme and accent colours |
+| `src/components/Drawer.vue`, `src/useSwipeDown.ts` | Drawer and swipe-to-close |
 | `src/player.ts` | One `<audio>` element, the queue, shuffle / repeat, Media Session, saved state |
 | `src/views/`, `src/components/` | Screens and shared pieces (Vue 3) |
 | `src/styles.css` | Ember design tokens and all styling |
