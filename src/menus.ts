@@ -1,7 +1,7 @@
 import type { Playlist, Song } from './db'
 import { albumKeyOf, removeSongs, type Album } from './library'
 import { addToQueue, dropSongs, playNext } from './player'
-import { addToPlaylist, createPlaylist, playlists, removePlaylist, renamePlaylist } from './playlists'
+import { addToPlaylist, createPlaylist, playlists, removeFromPlaylist, removePlaylist, renamePlaylist, setPlaylistOrder } from './playlists'
 import { confirmSheet, openSheet, promptSheet, toast, type SheetAction } from './ui'
 import { plural } from './format'
 import { router } from './router'
@@ -22,23 +22,42 @@ export async function newPlaylist(songIds: string[] = []) {
   return p
 }
 
-/** Lets the user pick which playlist the songs go into, or make a new one. */
+/**
+ * Pick the playlists the songs go into. Playlists that already have them are ticked ("Added");
+ * tapping one again takes the songs back out. The drawer stays open so several can be chosen.
+ */
 export function choosePlaylist(songIds: string[], what: string) {
+  const ids = [...new Set(songIds)]
+  const reopen = () => choosePlaylist(ids, what)
   openSheet({
     title: 'Add to playlist',
     subtitle: what,
     actions: [
-      { label: 'New playlist', icon: 'plus', run: () => newPlaylist(songIds) },
-      ...playlists.value.map((p) => ({
-        label: p.name,
-        icon: 'playlist',
-        run: async () => {
-          const n = await addToPlaylist(p.id, songIds)
-          toast(n ? `Added to "${p.name}"` : `Already in "${p.name}"`)
-        },
-      })),
+      { label: 'New playlist', icon: 'plus', run: () => newPlaylist(ids) },
+      ...playlists.value.map((p) => {
+        const have = new Set(p.songIds)
+        const n = ids.filter((id) => have.has(id)).length
+        const all = n === ids.length
+        return {
+          label: p.name,
+          icon: 'playlist',
+          primary: all,
+          keepOpen: true,
+          note: all ? 'Added' : n ? `${n} of ${ids.length} added` : undefined,
+          run: async () => {
+            if (all) {
+              for (const id of ids) await removeFromPlaylist(p.id, id)
+              toast(`Removed from "${p.name}"`)
+            } else {
+              await addToPlaylist(p.id, ids)
+              toast(`Added to "${p.name}"`)
+            }
+            reopen()
+          },
+        }
+      }),
     ],
-    cancel: 'Cancel',
+    cancel: 'Done',
   })
 }
 
@@ -50,12 +69,12 @@ export function songMenu(song: Song, extra: SheetAction[] = []) {
     coverId: song.coverId,
     showCover: true,
     actions: [
+      ...extra,
       { label: 'Add to playlist', icon: 'playlist-add', run: () => choosePlaylist([song.id], song.title) },
       { label: 'Play next', icon: 'next', run: () => (playNext([song.id]), toast('Playing next')) },
       { label: 'Add to queue', icon: 'queue', run: () => (addToQueue([song.id]), toast('Added to queue')) },
       ...(albumKey ? [{ label: 'Go to album', icon: 'disc', run: () => router.push({ name: 'album', params: { id: albumKey } }) }] : []),
       { label: 'Go to artist', icon: 'person', run: () => router.push({ name: 'artist', params: { name: song.artist } }) },
-      ...extra,
       {
         label: 'Delete from this device',
         icon: 'trash',
@@ -97,6 +116,21 @@ export function playlistMenu(p: Playlist, onEdit?: () => void) {
     subtitle: `Playlist · ${plural(p.songIds.length, 'song')}`,
     actions: [
       ...(onEdit && p.songIds.length > 1 ? [{ label: 'Reorder or remove songs', icon: 'grip', run: onEdit }] : []),
+      ...(p.songIds.length > 2
+        ? [{
+            label: 'Shuffle the order',
+            icon: 'shuffle',
+            run: async () => {
+              const ids = [...p.songIds]
+              for (let i = ids.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1))
+                ;[ids[i], ids[j]] = [ids[j], ids[i]]
+              }
+              await setPlaylistOrder(p.id, ids)
+              toast('New order saved')
+            },
+          }]
+        : []),
       {
         label: 'Rename',
         icon: 'edit',

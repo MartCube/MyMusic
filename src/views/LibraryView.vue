@@ -147,7 +147,7 @@ async function addPlaylist() {
         <div v-else class="empty" style="margin: 0">
           <div class="mark"><Icon name="playlist" :size="34" /></div>
           <h2>No playlists yet</h2>
-          <p>Group songs you like to hear together. You can also start one from any song's ⋮ menu.</p>
+          <p>Group songs you like to hear together. You can also start one from any song's three-dot menu.</p>
           <button class="btn primary" @click="addPlaylist"><Icon name="plus" :size="18" />New playlist</button>
         </div>
       </template>

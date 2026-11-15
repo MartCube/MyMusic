@@ -6,7 +6,7 @@ import Drawer from './Drawer.vue'
 import Icon from './Icon.vue'
 
 function run(a: SheetAction) {
-  closeSheet()
+  if (!a.keepOpen) closeSheet()
   a.run()
 }
 const text = ref('')
@@ -45,9 +45,10 @@ function submit() {
         <input ref="field" v-model="text" class="field" type="text" maxlength="80" enterkeyhint="done" autocomplete="off" :placeholder="ui.sheet.input.placeholder" :aria-label="ui.sheet.input.placeholder" />
         <button type="submit" class="btn primary" :disabled="!text.trim()">{{ ui.sheet.input.submit }}</button>
       </form>
-      <button v-for="a in ui.sheet.actions" :key="a.label" class="act" :class="{ danger: a.danger }" @click="run(a)">
+      <button v-for="a in ui.sheet.actions" :key="a.label" class="act" :class="{ danger: a.danger, picked: a.primary }" :aria-pressed="a.keepOpen ? !!a.primary : undefined" @click="run(a)">
         <Icon v-if="a.icon" :name="a.icon" />
         <span class="grow">{{ a.label }}</span>
+        <span v-if="a.note" class="note">{{ a.note }}</span>
         <Icon v-if="a.primary" name="check" />
       </button>
       <button class="act cancel" @click="dismissSheet">{{ ui.sheet.cancel ?? 'Close' }}</button>

@@ -28,7 +28,24 @@ async function remove(song: Song) {
   toast('Removed from playlist')
   if (!list.value.length) editing.value = false
 }
-const removeAction = (song: Song) => [{ label: 'Remove from this playlist', icon: 'close', run: () => remove(song) }]
+// Extra entries in a song's ⋮ menu inside a playlist: change its place, or take it out.
+async function moveTo(song: Song, to: number) {
+  const ids = list.value.map((s) => s.id)
+  const from = ids.indexOf(song.id)
+  if (from < 0 || from === to) return
+  ids.splice(to, 0, ...ids.splice(from, 1))
+  await setPlaylistOrder(props.id, ids)
+  toast(to === 0 ? 'Moved to the top' : to === ids.length - 1 ? 'Moved to the bottom' : `Now number ${to + 1}`)
+}
+function playlistActions(song: Song) {
+  const i = list.value.findIndex((s) => s.id === song.id)
+  const last = list.value.length - 1
+  return [
+    ...(i > 0 ? [{ label: 'Move to top', icon: 'top', run: () => moveTo(song, 0) }, { label: 'Move up', icon: 'up', run: () => moveTo(song, i - 1) }] : []),
+    ...(i < last ? [{ label: 'Move down', icon: 'down', run: () => moveTo(song, i + 1) }, { label: 'Move to bottom', icon: 'bottom', run: () => moveTo(song, last) }] : []),
+    { label: 'Remove from this playlist', icon: 'close', run: () => remove(song) },
+  ]
+}
 
 // ---- drag to reorder (edit mode). Rows have a fixed height, so the target slot is simple arithmetic.
 const ROW = 60
@@ -89,7 +106,10 @@ async function nudge(i: number, by: number) {
       <template v-if="list.length">
         <div v-if="!editing" class="btn-row">
           <PlayButtons :ids="list.map((s) => s.id)" :context="{ kind: 'playlist', label: playlist.name, id: playlist.id }" />
-          <button v-if="list.length > 1" class="btn" style="flex: 0 0 48px; padding: 0" aria-label="Reorder or remove songs" @click="editing = true"><Icon name="grip" /></button>
+        </div>
+        <div v-if="!editing && list.length > 1" class="between" style="margin-bottom: -8px">
+          <span class="small muted">Use a song’s three-dot menu to move it</span>
+          <button class="text-btn" style="color: var(--accent); font-weight: 700" @click="editing = true"><Icon name="grip" :size="16" />Reorder</button>
         </div>
         <p v-else class="small muted">Drag the handle to change the order. Tap × to take a song out of the playlist.</p>
 
@@ -116,13 +136,13 @@ async function nudge(i: number, by: number) {
           </div>
         </div>
         <div v-else class="songs">
-          <SongRow v-for="(s, i) in list" :key="s.id" :song="s" :menu-extra="removeAction(s)" @play="play(i)" />
+          <SongRow v-for="(s, i) in list" :key="s.id" :song="s" :menu-extra="playlistActions(s)" :position="i + 1" @play="play(i)" />
         </div>
       </template>
       <div v-else class="empty">
         <div class="mark"><Icon name="playlist" :size="34" /></div>
         <h2>No songs yet</h2>
-        <p>Open the ⋮ menu on any song or album and choose "Add to playlist".</p>
+        <p>Open the three-dot menu on any song or album and choose "Add to playlist".</p>
         <RouterLink :to="{ name: 'library', query: { tab: 'songs' } }" class="btn primary">Browse songs</RouterLink>
       </div>
     </template>

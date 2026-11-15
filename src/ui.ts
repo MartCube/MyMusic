@@ -5,6 +5,10 @@ export interface SheetAction {
   icon?: string
   danger?: boolean
   primary?: boolean
+  /** Small text on the right, e.g. "Added". */
+  note?: string
+  /** Leave the sheet open after running (the action reopens it with fresh state). */
+  keepOpen?: boolean
   run: () => void
 }
 
