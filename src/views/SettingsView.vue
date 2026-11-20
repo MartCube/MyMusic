@@ -8,6 +8,7 @@ import { fmtBytes, plural } from '../format'
 import { ACCENTS, theme, type Mode } from '../theme'
 import Icon from '../components/Icon.vue'
 import { canInstall, install, IOS_STEPS, isIos, offerInstall } from '../install'
+import { webSettings } from '../webImport'
 
 const total = computed(() => storage.used + storage.free)
 const musicPct = computed(() => (total.value ? (musicBytes.value / total.value) * 100 : 0))
@@ -136,7 +137,30 @@ onMounted(refreshStorage)
       <h2 class="label">Library</h2>
       <div class="list-card">
         <RouterLink :to="{ name: 'import' }"><span class="grow">Import music</span><Icon name="right" :size="18" /></RouterLink>
+        <RouterLink :to="{ name: 'web' }"><span class="grow">Add from web</span><Icon name="right" :size="18" /></RouterLink>
         <button class="danger" :disabled="!songs.length" @click="deleteAll">Delete all music from this device</button>
+      </div>
+    </section>
+
+    <section id="web" class="section" style="gap: 8px">
+      <h2 class="label">Add from web</h2>
+      <div class="card">
+        <label class="form-row">
+          <span style="font-weight: 500">Converter address</span>
+          <input
+            v-model.lazy="webSettings.converterUrl"
+            class="field"
+            type="url"
+            inputmode="url"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="https://…"
+          />
+        </label>
+        <div class="muted" style="font-size: 12px; line-height: 1.45">
+          The page “Open converter” opens in a new tab. Put <code>{url}</code> where the pasted link should go, for example <code>https://example.com/?link={url}</code>. Without it, the link is copied so you can paste it there.
+        </div>
       </div>
     </section>
 

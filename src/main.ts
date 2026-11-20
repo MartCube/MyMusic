@@ -12,6 +12,9 @@ import { ui } from './ui'
 import { initTheme } from './theme'
 // Registers the install listeners early: Chrome offers "install" once, right after the page loads.
 import './install'
+import * as web from './webImport'
+// Your own converters register themselves here (see src/converters/index.ts).
+import './converters'
 
 initTheme()
 
@@ -40,6 +43,16 @@ const applyUpdate = registerSW({
     const check = () => navigator.onLine && registration.update().catch(() => {})
     setInterval(check, 60 * 60 * 1000)
     document.addEventListener('visibilitychange', () => !document.hidden && check())
+  },
+})
+
+// The import hook for code outside the app bundle, and for trying it from the browser console:
+//   await MyMusic.importFromBlob(file, { sourceUrl, title, artist })
+Object.assign(window, {
+  MyMusic: {
+    importFromBlob: web.importFromBlob,
+    importFromUrl: web.importFromUrl,
+    registerConverter: web.registerConverter,
   },
 })
 

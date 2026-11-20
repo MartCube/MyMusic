@@ -171,24 +171,75 @@ export async function importFiles(input: File[]) {
 }
 
 async function importOne(file: File, item: ImportItem, folderCovers: Map<string, File>, coverSeen: Map<string, string>) {
+  let read: AudioRead
+  try {
+    read = await readAudio(file)
+  } catch (e) {
+    if (!(e instanceof ImportError)) throw e
+    item.status = e.reason === 'not-audio' ? 'skipped' : e.reason === 'duplicate' ? 'duplicate' : 'failed'
+    item.note = e.message
+    return
+  }
+  const { common } = read
+
+  let coverId = ''
+  const folderCover = folderCovers.get(dirOf(file))
+  if (read.picture) coverId = await saveCover(read.picture, coverSeen)
+  else if (folderCover && file.webkitRelativePath) coverId = await saveCover(folderCover, coverSeen)
+
+  const guess = fromFileName(file.name)
+  const artist = common?.artist?.trim() || common?.albumartist?.trim() || UNKNOWN_ARTIST
+  const song = makeSong(read, file.name, {
+    title: common?.title?.trim() || guess.title,
+    artist,
+    album: common?.album?.trim() || '',
+    track: common?.track?.no ?? guess.track,
+    coverId,
+  })
+  await store.putSong(song, read.audio)
+  addSongToLibrary(song)
+  item.status = 'added'
+  item.note = 'Added'
+}
+
+// ---------------------------------------------------------------------------
+// Shared by the bulk import above and the single-song import (src/webImport.ts).
+
+export type ImportErrorReason = 'not-audio' | 'unsupported' | 'unplayable' | 'duplicate' | 'storage'
+
+/** A file that cannot be added; `message` is written for people. */
+export class ImportError extends Error {
+  constructor(
+    public reason: ImportErrorReason,
+    message: string,
+    /** For 'duplicate': the song already in the library. */
+    public existing?: Song,
+  ) {
+    super(message)
+    this.name = 'ImportError'
+  }
+}
+
+export interface AudioRead {
+  id: string
+  mime: string
+  audio: Blob
+  duration: number
+  common?: ICommonTagsResult
+  /** Embedded cover art, if any. */
+  picture: Blob | null
+  size: number
+}
+
+/** Checks a file is playable audio that is not in the library yet, and reads its tags. Throws ImportError. */
+export async function readAudio(file: File): Promise<AudioRead> {
   const ext = extOf(file.name)
   const mime = MIME[ext] ?? (file.type.startsWith('audio/') ? file.type : '')
-  if (!mime) {
-    item.status = 'skipped'
-    item.note = 'Not audio, skipped'
-    return
-  }
-  if (!canPlay(mime)) {
-    item.status = 'failed'
-    item.note = `This browser can't play ${ext.toUpperCase()} files`
-    return
-  }
+  if (!mime) throw new ImportError('not-audio', 'Not audio, skipped')
+  if (!canPlay(mime)) throw new ImportError('unsupported', `This browser can't play ${(MIME[ext] ? ext : mime).toUpperCase()} files`)
   const id = await fingerprint(file)
-  if (songsById.value.has(id)) {
-    item.status = 'duplicate'
-    item.note = 'Already in library'
-    return
-  }
+  const existing = songsById.value.get(id)
+  if (existing) throw new ImportError('duplicate', 'Already in library', existing)
 
   const audio = file.slice(0, file.size, mime)
   // Loaded on first use so the tag reader does not slow down opening the app.
@@ -203,40 +254,44 @@ async function importOne(file: File, item: ImportItem, folderCovers: Map<string,
     console.warn('No readable tags in', file.name, e)
   }
   if (!duration) duration = await probeDuration(audio)
-  if (!duration) {
-    // Neither the tags nor the browser can make sense of it: damaged, or not really audio.
-    item.status = 'failed'
-    item.note = 'Not a playable audio file'
-    return
-  }
+  // Neither the tags nor the browser can make sense of it: damaged, or not really audio.
+  if (!duration) throw new ImportError('unplayable', 'Not a playable audio file')
 
-  let coverId = ''
   const pic = selectCover(common?.picture)
-  const folderCover = folderCovers.get(dirOf(file))
-  if (pic) coverId = await saveCover(new Blob([pic.data as BlobPart], { type: pic.format || 'image/jpeg' }), coverSeen)
-  else if (folderCover && file.webkitRelativePath) coverId = await saveCover(folderCover, coverSeen)
-
-  const guess = fromFileName(file.name)
-  const artist = common?.artist?.trim() || common?.albumartist?.trim() || UNKNOWN_ARTIST
-  const song: Song = {
-    id,
-    title: common?.title?.trim() || guess.title,
-    artist,
-    album: common?.album?.trim() || '',
-    albumArtist: common?.albumartist?.trim() || artist,
-    track: common?.track?.no ?? guess.track,
-    disc: common?.disk?.no ?? 1,
-    year: common?.year ?? 0,
-    genre: common?.genre?.[0] ?? '',
-    duration,
-    coverId,
-    addedAt: Date.now(),
-    fileName: file.name,
-    size: file.size,
-    mime,
-  }
-  await store.putSong(song, audio)
-  addSongToLibrary(song)
-  item.status = 'added'
-  item.note = 'Added'
+  const picture = pic ? new Blob([pic.data as BlobPart], { type: pic.format || 'image/jpeg' }) : null
+  return { id, mime, audio, duration, common, picture, size: file.size }
 }
+
+export function makeSong(
+  read: AudioRead,
+  fileName: string,
+  info: { title: string; artist: string; album: string; track: number; coverId: string; sourceUrl?: string },
+): Song {
+  const c = read.common
+  const song: Song = {
+    id: read.id,
+    title: info.title,
+    artist: info.artist,
+    album: info.album,
+    albumArtist: c?.albumartist?.trim() || info.artist,
+    track: info.track,
+    disc: c?.disk?.no ?? 1,
+    year: c?.year ?? 0,
+    genre: c?.genre?.[0] ?? '',
+    duration: read.duration,
+    coverId: info.coverId,
+    addedAt: Date.now(),
+    fileName,
+    size: read.size,
+    mime: read.mime,
+  }
+  if (info.sourceUrl) song.sourceUrl = info.sourceUrl
+  return song
+}
+
+/** Stores a cover image (shrunk) and returns its id. */
+export function storeCover(image: Blob) {
+  return saveCover(image, new Map())
+}
+
+export { fromFileName, extOf, MIME }

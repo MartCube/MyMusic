@@ -17,6 +17,8 @@ export interface Song {
   fileName: string
   size: number
   mime: string
+  /** The web page or link the song was added from, if any. */
+  sourceUrl?: string
 }
 
 export interface Playlist {
