@@ -10,6 +10,8 @@ import { loadLibrary } from './library'
 import { restorePlayer } from './player'
 import { ui } from './ui'
 import { initTheme } from './theme'
+// Registers the install listeners early: Chrome offers "install" once, right after the page loads.
+import './install'
 
 initTheme()
 
@@ -39,12 +41,6 @@ const applyUpdate = registerSW({
     setInterval(check, 60 * 60 * 1000)
     document.addEventListener('visibilitychange', () => !document.hidden && check())
   },
-})
-
-// Chrome offers "install" once, early; keep the offer for the Settings screen.
-addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault()
-  ;(window as unknown as { __installPrompt?: Event }).__installPrompt = e
 })
 
 createApp(App).use(router).mount('#app')

@@ -27,6 +27,7 @@ const ICONS: Record<string, { d: string; fill?: boolean; w?: number }> = {
   up: { d: '<path d="M6 15l6-6 6 6"/>', w: 2.2 },
   top: { d: '<path d="M5 4h14M7 14l5-5 5 5M12 9v11"/>', w: 2.2 },
   bottom: { d: '<path d="M5 20h14M7 10l5 5 5-5M12 15V4"/>', w: 2.2 },
+  download: { d: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', w: 2.2 },
   check: { d: '<path d="M5 12l5 5 9-10"/>', w: 2.4 },
   play: { d: '<path d="M7 4v16l13-8z"/>', fill: true },
   pause: { d: '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>', fill: true },
