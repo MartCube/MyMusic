@@ -4,6 +4,11 @@ import { ui, closeSheet, dismissSheet, type SheetAction } from '../ui'
 import Cover from './Cover.vue'
 import Drawer from './Drawer.vue'
 import Icon from './Icon.vue'
+import { useRoute } from 'vue-router'
+import { canInstall, dismissBanner, install, isIos, offerInstall } from '../install'
+
+// Settings has its own Install section, so the banner stays out of the way there.
+const route = useRoute()
 
 function run(a: SheetAction) {
   if (!a.keepOpen) closeSheet()
@@ -59,6 +64,13 @@ function submit() {
       <span class="grow">A new version of MyMusic is ready.</span>
       <button class="btn primary" @click="ui.update()"><Icon name="refresh" :size="16" />Reload</button>
       <button class="icon-btn plain" aria-label="Later" @click="ui.update = null"><Icon name="close" :size="16" /></button>
+    </div>
+  </Transition>
+  <Transition name="fade">
+    <div v-if="!ui.update && !install.bannerDismissed && route.name !== 'settings' && canInstall()" class="update install-bar" role="region" aria-label="Install MyMusic">
+      <span class="grow">Install MyMusic for full screen and offline play.</span>
+      <button class="btn primary" @click="offerInstall"><Icon name="download" :size="16" />{{ isIos ? 'How' : 'Install' }}</button>
+      <button class="icon-btn plain" aria-label="Not now" @click="dismissBanner"><Icon name="close" :size="16" /></button>
     </div>
   </Transition>
   <Transition name="fade">

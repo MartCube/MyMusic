@@ -10,6 +10,8 @@ import { loadLibrary } from './library'
 import { restorePlayer } from './player'
 import { ui } from './ui'
 import { initTheme } from './theme'
+// Registers the install listeners early: Chrome offers "install" once, right after the page loads.
+import './install'
 import * as web from './webImport'
 // Your own converters register themselves here (see src/converters/index.ts).
 import './converters'
@@ -42,12 +44,6 @@ const applyUpdate = registerSW({
     setInterval(check, 60 * 60 * 1000)
     document.addEventListener('visibilitychange', () => !document.hidden && check())
   },
-})
-
-// Chrome offers "install" once, early; keep the offer for the Settings screen.
-addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault()
-  ;(window as unknown as { __installPrompt?: Event }).__installPrompt = e
 })
 
 // The import hook for code outside the app bundle, and for trying it from the browser console:

@@ -7,6 +7,7 @@ import { confirmSheet, openSheet, toast, ui } from '../ui'
 import { fmtBytes, plural } from '../format'
 import { ACCENTS, theme, type Mode } from '../theme'
 import Icon from '../components/Icon.vue'
+import { canInstall, install, IOS_STEPS, isIos, offerInstall } from '../install'
 import { webSettings } from '../webImport'
 
 const total = computed(() => storage.used + storage.free)
@@ -40,7 +41,7 @@ async function protect() {
     return
   }
   protectDenied.value = true
-  const steps = standalone
+  const steps = install.standalone
     ? 'Open MyMusic a few more times and try again; browsers allow this for apps you use regularly.'
     : isIos
       ? 'In Safari, tap Share, then "Add to Home Screen", open MyMusic from the home screen, and try again.'
@@ -48,7 +49,7 @@ async function protect() {
   openSheet({
     title: 'The browser did not allow this yet',
     text: `Your music is still saved and plays offline. Without protection, the browser may remove it only if the device runs very low on space. ${steps}`,
-    actions: installEvent.value ? [{ label: 'Install MyMusic now', run: install }] : [],
+    actions: install.prompt ? [{ label: 'Install MyMusic now', run: offerInstall }] : [],
   })
 }
 
@@ -65,18 +66,6 @@ async function deleteAll() {
   toast('Library deleted')
 }
 
-// Install: Android and desktop Chrome offer a prompt; on iPhone it is done from the Share menu.
-const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true
-const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent)
-const installEvent = ref<(Event & { prompt: () => Promise<unknown> }) | null>((window as any).__installPrompt ?? null)
-addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault()
-  installEvent.value = e as any
-})
-async function install() {
-  await installEvent.value?.prompt()
-  installEvent.value = null
-}
 
 const build = __BUILD__
 const checking = ref(false)
@@ -135,12 +124,13 @@ onMounted(refreshStorage)
       </div>
     </div>
 
-    <section v-if="!standalone && (installEvent || isIos)" class="section" style="gap: 8px">
+    <section v-if="canInstall()" class="section" style="gap: 8px">
       <h2 class="label">Install</h2>
       <div class="list-card">
-        <button v-if="installEvent" @click="install"><span class="grow">Install MyMusic as an app</span><Icon name="right" :size="18" /></button>
-        <div v-else style="font-size: 14px; line-height: 1.45; padding: 14px 16px">In Safari, tap Share, then "Add to Home Screen". MyMusic then opens like an app and keeps your music safer.</div>
+        <button v-if="install.prompt" style="color: var(--accent); font-weight: 700" @click="offerInstall"><span class="grow">Install MyMusic as an app</span><Icon name="download" :size="18" /></button>
+        <div v-else style="font-size: 14px; line-height: 1.45; padding: 14px 16px">{{ IOS_STEPS }}</div>
       </div>
+      <div v-if="install.prompt" class="muted" style="font-size: 12px; line-height: 1.45">Opens full screen from your home screen or app list, works offline, and the browser is less likely to clear your music.</div>
     </section>
 
     <section class="section" style="gap: 8px">
