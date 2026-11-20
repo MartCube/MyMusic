@@ -10,6 +10,9 @@ import { loadLibrary } from './library'
 import { restorePlayer } from './player'
 import { ui } from './ui'
 import { initTheme } from './theme'
+import * as web from './webImport'
+// Your own converters register themselves here (see src/converters/index.ts).
+import './converters'
 
 initTheme()
 
@@ -45,6 +48,16 @@ const applyUpdate = registerSW({
 addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault()
   ;(window as unknown as { __installPrompt?: Event }).__installPrompt = e
+})
+
+// The import hook for code outside the app bundle, and for trying it from the browser console:
+//   await MyMusic.importFromBlob(file, { sourceUrl, title, artist })
+Object.assign(window, {
+  MyMusic: {
+    importFromBlob: web.importFromBlob,
+    importFromUrl: web.importFromUrl,
+    registerConverter: web.registerConverter,
+  },
 })
 
 createApp(App).use(router).mount('#app')
