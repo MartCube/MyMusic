@@ -51,6 +51,9 @@ watch(() => [st.done, st.running], () => (st.done % 10 === 0 || !st.running) && 
         <input type="file" webkitdirectory multiple :disabled="st.running" @change="picked" />
       </label>
     </div>
+    <RouterLink :to="{ name: 'web' }" class="list-card" :class="{ off: st.running }">
+      <span class="row"><Icon name="link" :size="22" /><span class="grow" style="font-weight: 700">Add from web</span><Icon name="right" :size="18" /></span>
+    </RouterLink>
     <p class="small muted" style="line-height: 1.5">
       MP3, M4A and AAC work everywhere. FLAC, WAV and OGG work where your browser supports them. Title, artist, album and cover are read from the files. The songs are copied into the app, so they play with no internet.
     </p>

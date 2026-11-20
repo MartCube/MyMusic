@@ -5,6 +5,8 @@ import ArtistView from './views/ArtistView.vue'
 import PlaylistView from './views/PlaylistView.vue'
 import SearchView from './views/SearchView.vue'
 import ImportView from './views/ImportView.vue'
+import AddFromWebView from './views/AddFromWebView.vue'
+import ReviewImportView from './views/ReviewImportView.vue'
 import ShortcutsView from './views/ShortcutsView.vue'
 import SettingsView from './views/SettingsView.vue'
 
@@ -17,6 +19,8 @@ export const router = createRouter({
     { path: '/playlist/:id', name: 'playlist', component: PlaylistView, props: true },
     { path: '/search', name: 'search', component: SearchView },
     { path: '/import', name: 'import', component: ImportView },
+    { path: '/add-from-web', name: 'web', component: AddFromWebView },
+    { path: '/import/review', name: 'review', component: ReviewImportView },
     { path: '/settings', name: 'settings', component: SettingsView },
     { path: '/settings/shortcuts', name: 'shortcuts', component: ShortcutsView },
     { path: '/:rest(.*)*', redirect: '/' },
@@ -24,6 +28,7 @@ export const router = createRouter({
   scrollBehavior(to, from, saved) {
     // The player opens as a layer over the page (?np=...), so the page keeps its place.
     if (to.path === from.path) return false
+    if (to.hash) return { el: to.hash, top: 16 }
     return saved ?? { top: 0 }
   },
 })
